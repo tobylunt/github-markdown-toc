@@ -95,7 +95,7 @@ gh_toc(){
     local gh_src=$1
     local gh_src_copy=$1
     local gh_ttl_docs=$2
-    local need_replace=$3
+    local need_replace="yes"
 
     if [ "$gh_src" = "" ]; then
         echo "Please, enter URL or local path for a README.md"
@@ -112,6 +112,15 @@ gh_toc(){
         gh_src_copy=""
 
     fi
+
+    # set targets for TOC section
+    local ts="<\!--ts-->"
+    local te="<\!--te-->"
+    local dt=`date +'%F_%H%M%S'`
+    local ext=".orig.${dt}"
+
+    # clear old TOC
+    sed -i${ext} "/${ts}/,/${te}/{//!d;}" "$gh_src"
 
     if [ "$(gh_is_url "$gh_src")" == "yes" ]; then
         gh_toc_load "$gh_src" | gh_toc_grab "$gh_src_copy"
@@ -140,25 +149,23 @@ gh_toc(){
              echo "or place github auth token here: $TOKEN"
              exit 1
         fi
-        local toc=`echo "$rawhtml" | gh_toc_grab "$gh_src_copy"`
-        echo "$toc"
-        if [ "$need_replace" = "yes" ]; then
+# note: mandating in-place replacement
+        #        if [ "$need_replace" = "yes" ]; then
             if grep -Fxq "<!--ts-->" $gh_src && grep -Fxq "<!--te-->" $gh_src; then
                 echo "Found markers"
             else
                 echo "You don't have <!--ts--> or <!--te--> in your file...exiting"
                 exit 1
             fi
-            local ts="<\!--ts-->"
-            local te="<\!--te-->"
-            local dt=`date +'%F_%H%M%S'`
-            local ext=".orig.${dt}"
             local toc_path="${gh_src}.toc.${dt}"
             local toc_footer="<!-- Added by: `whoami`, at: `date` -->"
             # http://fahdshariff.blogspot.ru/2012/12/sed-mutli-line-replacement-between-two.html
-            # clear old TOC
-            # COMMENTED OUT - don't want to copy old version
-            sed -i${ext} "/${ts}/,/${te}/{//!d;}" "$gh_src"
+            # now generate the toc
+            local toc2=`echo "$rawhtml" | gh_toc_grab "$gh_src_copy"`
+#            local toc="# Table of Contents\n${toc2}"
+            local toc=$(printf "# Table of Contents\n${toc2}")
+            echo "echoing toc"
+            echo "$toc"
             # create toc file
             echo "${toc}" > "${toc_path}"
             echo -e "\n${toc_footer}\n" >> "$toc_path"
@@ -176,7 +183,7 @@ gh_toc(){
 #            echo "!! Origin version of the file: '${gh_src}${ext}'"
 #            echo "!! TOC added into a separate file: '${toc_path}'"
             echo
-        fi
+#        fi
     fi
 }
 
