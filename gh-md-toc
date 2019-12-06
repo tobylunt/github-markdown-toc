@@ -157,6 +157,7 @@ gh_toc(){
             local toc_footer="<!-- Added by: `whoami`, at: `date` -->"
             # http://fahdshariff.blogspot.ru/2012/12/sed-mutli-line-replacement-between-two.html
             # clear old TOC
+            # COMMENTED OUT - don't want to copy old version
             sed -i${ext} "/${ts}/,/${te}/{//!d;}" "$gh_src"
             # create toc file
             echo "${toc}" > "${toc_path}"
@@ -167,10 +168,13 @@ gh_toc(){
             else
                 sed -i "/${ts}/r ${toc_path}" "$gh_src"
             fi
+            # remove separate TOC and original files - don't want these
+            rm ${gh_src}${ext}
+            rm ${toc_path}
             echo
             echo "!! TOC was added into: '$gh_src'"
-            echo "!! Origin version of the file: '${gh_src}${ext}'"
-            echo "!! TOC added into a separate file: '${toc_path}'"
+#            echo "!! Origin version of the file: '${gh_src}${ext}'"
+#            echo "!! TOC added into a separate file: '${toc_path}'"
             echo
         fi
     fi
@@ -202,7 +206,15 @@ gh_toc_grab() {
     level = substr($0, length($0), 1)
     text = substr($0, match($0, /a>.*<\/h/)+2, RLENGTH-5)
     href = substr($0, match($0, "href=\"[^\"]+?\"")+6, RLENGTH-7)
-    print sprintf("%*s", level*3, " ") "* [" text "](" gh_url  href ")" }' |
+    # fix list spacing issues
+    if(level==1) { 
+        print "* [" text "](" gh_url  href ")" 
+    }
+    if(level!=1) { 
+        print sprintf("%*s", level - 1, " ") "* [" text "](" gh_url  href ")" 
+    }
+
+    }' |
         sed 'y/+/ /; s/%/\\x/g')"
 }
 
@@ -214,7 +226,7 @@ gh_toc_get_filename() {
 }
 
 #
-# Options hendlers
+# Options handlers
 #
 gh_toc_app() {
     local need_replace="no"
@@ -272,7 +284,7 @@ gh_toc_app() {
     done
 
     echo ""
-    echo "Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)"
+    echo "Created from a fork of the original [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)"
 }
 
 #
